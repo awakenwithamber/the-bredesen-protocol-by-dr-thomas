@@ -112,6 +112,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
           ))}
         </div>
 
+        {/* Phase overview strip — links to /phases index */}
         <h2 className="font-display text-xl mt-10 mb-4" style={{ color: 'var(--ink-900)' }}>
           The 6 phases at a glance
         </h2>
@@ -119,8 +120,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
           {phases.map((p) => (
             <Link
               key={p.number}
-              to="/phases/$slug"
-              params={{ slug: `phase-${p.number}` }}
+              to="/phases"
               className="flex items-center gap-4 rounded-2xl p-4"
               style={{ background: 'white', border: '1px solid var(--sage-200)', textDecoration: 'none' }}
             >
@@ -136,9 +136,11 @@ import { createFileRoute, Link } from '@tanstack/react-router'
                 {p.number}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-display text-base" style={{ color: 'var(--ink-900)' }}>{p.title}</div>
-                <div className="text-sm mt-0.5 truncate" style={{ color: 'var(--ink-500)' }}>
-                  {p.weekRange} · {p.tagline}
+                <div className="font-display text-base" style={{ color: 'var(--ink-900)' }}>
+                  {p.title}
+                </div>
+                <div className="text-sm mt-0.5" style={{ color: 'var(--ink-500)' }}>
+                  Weeks {p.weekRange[0]}–{p.weekRange[1]} &middot; {p.tagline}
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 shrink-0" style={{ color: 'var(--ink-300)' }} />
