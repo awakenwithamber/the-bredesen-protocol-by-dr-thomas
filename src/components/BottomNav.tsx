@@ -1,37 +1,37 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Home, Sparkles, Flower2, FolderOpen, LifeBuoy } from 'lucide-react'
+  import { Home, Sparkles, Flower2, BookOpen, LifeBuoy } from 'lucide-react'
 
-const items = [
-  { to: '/dashboard', label: 'Home', icon: Home },
-  { to: '/today', label: 'Today', icon: Sparkles },
-  { to: '/progress', label: 'Progress', icon: Flower2 },
-  { to: '/resources', label: 'Resources', icon: FolderOpen },
-  { to: '/help', label: 'Help', icon: LifeBuoy },
-]
+  const items = [
+    { to: '/', label: 'Home', icon: Home, exact: true },
+    { to: '/today', label: 'Today', icon: Sparkles, exact: false },
+    { to: '/progress', label: 'Progress', icon: Flower2, exact: false },
+    { to: '/education', label: 'Education', icon: BookOpen, exact: false },
+    { to: '/help', label: 'Help', icon: LifeBuoy, exact: false },
+  ]
 
-export function BottomNav() {
-  const { location } = useRouterState()
-  return (
-    <nav className="bottom-nav no-print" aria-label="Primary">
-      <div className="bottom-nav-row">
-        {items.map((i) => {
-          const active =
-            location.pathname === i.to ||
-            location.pathname.startsWith(i.to + '/')
-          const Icon = i.icon
-          return (
-            <Link
-              key={i.to}
-              to={i.to}
-              className={active ? 'active' : ''}
-              aria-current={active ? 'page' : undefined}
-            >
-              <Icon aria-hidden />
-              <span>{i.label}</span>
-            </Link>
-          )
-        })}
-      </div>
-    </nav>
-  )
-}
+  export function BottomNav() {
+    const { location } = useRouterState()
+    return (
+      <nav className="bottom-nav no-print" aria-label="Primary">
+        <div className="bottom-nav-row">
+          {items.map(({ to, label, icon: Icon, exact }) => {
+            const active = exact
+              ? location.pathname === to
+              : location.pathname === to || location.pathname.startsWith(to + '/')
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={active ? 'active' : ''}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon aria-hidden />
+                <span>{label}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+    )
+  }
+  
