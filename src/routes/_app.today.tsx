@@ -30,6 +30,7 @@ import { useJournal } from '@/lib/journal'
 import { workoutForDay } from '@/content/seatedWorkouts'
 import { dailyGameForDay } from '@/content/dailyGames'
 import { Card } from '@/components/ui'
+import { HealthieReminder } from '@/components/HealthieReminder'
 
 export const Route = createFileRoute('/_app/today')({
   component: TodayPage,
@@ -564,7 +565,12 @@ function TodayPage() {
         </div>
       </details>
 
-      {/* "I am having a hard day" — never aggressive, always present */}
+      {/* Gentle Healthie reminder — surfaces after any day */}
+        <div className="mt-6">
+          <HealthieReminder variant="compact" />
+        </div>
+
+        {/* "I am having a hard day" — never aggressive, always present */}
       <div className="mt-6 text-center">
         <Link
           to="/hard-day"
