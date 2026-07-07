@@ -23,152 +23,126 @@ export const Route = createFileRoute('/_app/admin')({
   component: AdminGate,
 })
 
-const ADMIN_EMAIL = 'iesleep12@gmail.com'
-const ADMIN_PASSWORD = 'DrThomas2024'
-const ADMIN_GATE_KEY = 'bredesen.admin.gate.v1'
-
-function AdminGate() {
-  const [unlocked, setUnlocked] = useState(false)
-  const [checked, setChecked] = useState(false)
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' &&
-          window.sessionStorage.getItem(ADMIN_GATE_KEY) === 'ok') {
-        setUnlocked(true)
-      }
-    } catch {}
-    setChecked(true)
-  }, [])
-
-  if (!checked) return null
-
-  if (unlocked) return <AdminDashboard />
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
-      try {
-        window.sessionStorage.setItem(ADMIN_GATE_KEY, 'ok')
-      } catch {}
-      setUnlocked(true)
-      return
-    }
-    setError('Incorrect password. Please try again.')
+const ADMIN_CREDENTIALS: Record<string, { name: string; password: string }> = {
+    'mthomas@slcsleep.com': { name: 'Dr. Thomas', password: 'DrThomas2024' },
+    'iesleep12@gmail.com':  { name: 'Amber',      password: 'DrThomas2024' },
   }
+  const ADMIN_GATE_KEY = 'bredesen.admin.gate.v2'
+  const ADMIN_WHO_KEY  = 'bredesen.admin.who.v2'
 
-  return (
-    <div className="max-w-md mx-auto px-4 py-12">
-      <div
-        className="rounded-2xl p-6 sm:p-8"
-        style={{
-          background: 'white',
-          border: '1px solid var(--sage-200)',
-          boxShadow: 'var(--shadow-card)',
-        }}
-      >
-        <h1
-          className="font-display"
+  function AdminGate() {
+    const [unlocked, setUnlocked] = useState(false)
+    const [checked, setChecked] = useState(false)
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+      try {
+        if (typeof window !== 'undefined' &&
+            window.sessionStorage.getItem(ADMIN_GATE_KEY) === 'ok') {
+          setUnlocked(true)
+        }
+      } catch {}
+      setChecked(true)
+    }, [])
+
+    if (!checked) return null
+    if (unlocked) return <AdminDashboard />
+
+    function onSubmit(e: React.FormEvent) {
+      e.preventDefault()
+      const normalised = email.trim().toLowerCase()
+      const cred = ADMIN_CREDENTIALS[normalised]
+      if (cred && password === cred.password) {
+        try {
+          window.sessionStorage.setItem(ADMIN_GATE_KEY, 'ok')
+          window.sessionStorage.setItem(ADMIN_WHO_KEY, normalised)
+        } catch {}
+        setUnlocked(true)
+        return
+      }
+      setError('Email or password not recognised. Please try again.')
+    }
+
+    return (
+      <div className="max-w-md mx-auto px-4 py-12">
+        <div
+          className="rounded-2xl p-6 sm:p-8"
           style={{
-            fontSize: '1.65rem',
-            color: 'var(--ink-900)',
-            lineHeight: 1.2,
+            background: 'white',
+            border: '1px solid var(--sage-200)',
+            boxShadow: 'var(--shadow-card)',
           }}
         >
-          Staff Only
-        </h1>
-        <p
-          className="mt-2 mb-5"
-          style={{ color: 'var(--ink-700)', fontSize: '1rem', lineHeight: 1.5 }}
-        >
-          This portal is for Dr. Thomas and Amber. Please enter the admin
-          password to continue.
-        </p>
-
-        <form onSubmit={onSubmit} className="space-y-3">
-          <label className="block">
-            <span className="block text-sm font-semibold mb-1">
-              Admin Password
-            </span>
-            <input
-              type="password"
-              autoFocus
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                if (error) setError(null)
-              }}
-              className="w-full p-3 rounded-xl border"
-              style={{ borderColor: 'rgba(122, 158, 122, 0.35)' }}
-              placeholder="Enter password"
-              required
-            />
-          </label>
-
-          {error && (
-            <div
-              role="alert"
-              className="text-sm p-3 rounded-xl"
-              style={{ background: '#fff1ee', color: '#9b3a26' }}
-            >
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="btn-primary w-full"
-            style={{ minHeight: 52 }}
+          <h1
+            className="font-display"
+            style={{ fontSize: '1.65rem', color: 'var(--ink-900)', lineHeight: 1.2 }}
           >
-            Log In
-          </button>
-        </form>
+            Staff Only
+          </h1>
+          <p
+            className="mt-2 mb-5"
+            style={{ color: 'var(--ink-700)', fontSize: '1rem', lineHeight: 1.5 }}
+          >
+            This portal is for Dr. Thomas and Amber. Please sign in with your
+            admin email and password to continue.
+          </p>
+
+          <form onSubmit={onSubmit} className="space-y-3">
+            <label className="block">
+              <span className="block text-sm font-semibold mb-1">Admin Email</span>
+              <input
+                type="email"
+                autoFocus
+                autoComplete="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); if (error) setError(null) }}
+                className="w-full p-3 rounded-xl border"
+                style={{ borderColor: 'rgba(122, 158, 122, 0.35)' }}
+                placeholder="your@email.com"
+                required
+              />
+            </label>
+
+            <label className="block">
+              <span className="block text-sm font-semibold mb-1">Password</span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); if (error) setError(null) }}
+                className="w-full p-3 rounded-xl border"
+                style={{ borderColor: 'rgba(122, 158, 122, 0.35)' }}
+                placeholder="Enter password"
+                required
+              />
+            </label>
+
+            {error && (
+              <div
+                role="alert"
+                className="text-sm p-3 rounded-xl"
+                style={{ background: '#fff1ee', color: '#9b3a26' }}
+              >
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="btn-primary w-full"
+              style={{ minHeight: 52 }}
+            >
+              Sign In
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
 
-type LivePatient = {
-  id: string
-  name: string
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  startDate: string
-  endDate: string
-  createdAt: string
-  lastActiveIso: string | null
-  lastActivityDays: number
-  status: string
-  currentDay: number
-  currentWeek: number
-  currentPhase: number
-  daysCompleted: number
-  totalDays: number
-  percentComplete: number
-  lastCompletedDay: number | null
-  journalEntries: number
-  foodLogs: number
-  brainGames: number
-  videosWatched: number
-  handoutsOpened: number
-  recipesViewed: number
-  isInactive: boolean
-  needsHelp: boolean
-  preferences?: { displayMode?: string; caregiverEnabled?: boolean }
-}
-
-function offsetIso(days: number) {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
-}
-
-function AdminDashboard() {
+  function AdminDashboard() {
   const [filter, setFilter] = useState<'all' | 'started' | 'active' | 'inactive' | 'needs-help' | 'completed'>('all')
   const [showAddForm, setShowAddForm] = useState(false)
   const [detailPatient, setDetailPatient] = useState<EnrichedPatient | null>(null)
@@ -199,7 +173,7 @@ function AdminDashboard() {
       const res = await fetch('/api/admin/send-reminder', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ patientId, email, action, actor: ADMIN_EMAIL }),
+        body: JSON.stringify({ patientId, email, action, actor: (typeof window !== 'undefined' && window.sessionStorage.getItem(ADMIN_WHO_KEY)) || 'admin' }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
@@ -327,7 +301,7 @@ function AdminDashboard() {
         <div className="flex items-center gap-2">
           <Mail className="w-4 h-4" style={{ color: 'var(--sage-700)' }} />
           <span>
-            Signed in as <strong>{ADMIN_EMAIL}</strong>
+            Signed in as <strong>{(typeof window !== 'undefined' && window.sessionStorage.getItem(ADMIN_WHO_KEY)) || 'admin'}</strong>
           </span>
         </div>
         <span aria-hidden style={{ color: 'var(--ink-300)' }}>·</span>
