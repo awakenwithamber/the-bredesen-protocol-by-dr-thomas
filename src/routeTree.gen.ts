@@ -33,6 +33,10 @@ import { Route as AppCaregiverRouteImport } from './routes/_app.caregiver'
 import { Route as AppBreathworkRouteImport } from './routes/_app.breathwork'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as AppActionPlanRouteImport } from './routes/_app.action-plan'
+  import { Route as AppEducationRouteImport } from './routes/_app.education'
+  import { Route as AppSubstitutesRouteImport } from './routes/_app.substitutes'
+  import { Route as AppHempRouteImport } from './routes/_app.hemp'
+  import { Route as AppHandoutsRouteImport } from './routes/_app.handouts'
 import { Route as AppResourcesIndexRouteImport } from './routes/_app.resources.index'
 import { Route as AppRecipesIndexRouteImport } from './routes/_app.recipes.index'
 import { Route as AppPhasesIndexRouteImport } from './routes/_app.phases.index'
@@ -236,6 +240,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/action-plan': typeof AppActionPlanRoute
+  '/education': typeof AppEducationRoute
+  '/substitutes': typeof AppSubstitutesRoute
+  '/hemp': typeof AppHempRoute
+  '/handouts': typeof AppHandoutsRoute
   '/admin': typeof AppAdminRouteWithChildren
   '/breathwork': typeof AppBreathworkRoute
   '/caregiver': typeof AppCaregiverRoute
@@ -274,6 +282,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/action-plan': typeof AppActionPlanRoute
+  '/education': typeof AppEducationRoute
+  '/substitutes': typeof AppSubstitutesRoute
+  '/hemp': typeof AppHempRoute
+  '/handouts': typeof AppHandoutsRoute
   '/admin': typeof AppAdminRouteWithChildren
   '/breathwork': typeof AppBreathworkRoute
   '/caregiver': typeof AppCaregiverRoute
@@ -314,6 +326,10 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/sign-in': typeof SignInRoute
   '/_app/action-plan': typeof AppActionPlanRoute
+  '/_app/education': typeof AppEducationRoute
+  '/_app/substitutes': typeof AppSubstitutesRoute
+  '/_app/hemp': typeof AppHempRoute
+  '/_app/handouts': typeof AppHandoutsRoute
   '/_app/admin': typeof AppAdminRouteWithChildren
   '/_app/breathwork': typeof AppBreathworkRoute
   '/_app/caregiver': typeof AppCaregiverRoute
@@ -354,6 +370,10 @@ export interface FileRouteTypes {
     | '/'
     | '/sign-in'
     | '/action-plan'
+    | '/education'
+    | '/substitutes'
+    | '/hemp'
+    | '/handouts'
     | '/admin'
     | '/breathwork'
     | '/caregiver'
@@ -392,6 +412,10 @@ export interface FileRouteTypes {
     | '/'
     | '/sign-in'
     | '/action-plan'
+    | '/education'
+    | '/substitutes'
+    | '/hemp'
+    | '/handouts'
     | '/admin'
     | '/breathwork'
     | '/caregiver'
@@ -431,6 +455,10 @@ export interface FileRouteTypes {
     | '/_app'
     | '/sign-in'
     | '/_app/action-plan'
+    | '/_app/education'
+    | '/_app/substitutes'
+    | '/_app/hemp'
+    | '/_app/handouts'
     | '/_app/admin'
     | '/_app/breathwork'
     | '/_app/caregiver'
@@ -750,6 +778,10 @@ const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppActionPlanRoute: typeof AppActionPlanRoute
+  AppEducationRoute: typeof AppEducationRoute
+  AppSubstitutesRoute: typeof AppSubstitutesRoute
+  AppHempRoute: typeof AppHempRoute
+  AppHandoutsRoute: typeof AppHandoutsRoute
   AppAdminRoute: typeof AppAdminRouteWithChildren
   AppBreathworkRoute: typeof AppBreathworkRoute
   AppCaregiverRoute: typeof AppCaregiverRoute
@@ -786,6 +818,10 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppActionPlanRoute: AppActionPlanRoute,
+  AppEducationRoute: AppEducationRoute,
+  AppSubstitutesRoute: AppSubstitutesRoute,
+  AppHempRoute: AppHempRoute,
+  AppHandoutsRoute: AppHandoutsRoute,
   AppAdminRoute: AppAdminRouteWithChildren,
   AppBreathworkRoute: AppBreathworkRoute,
   AppCaregiverRoute: AppCaregiverRoute,
