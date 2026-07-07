@@ -15,6 +15,9 @@ import {
   PauseCircle,
   Heart,
   Flag,
+  BookOpen,
+  Save,
+  ChevronRight,
 } from 'lucide-react'
 import { Card, SectionHeading, Chip } from '@/components/ui'
 import { adminFlagForState, computeProgramState, formatFriendly } from '@/lib/programDate'
@@ -144,6 +147,7 @@ const ADMIN_CREDENTIALS: Record<string, { name: string; password: string }> = {
 
   function AdminDashboard() {
   const [filter, setFilter] = useState<'all' | 'started' | 'active' | 'inactive' | 'needs-help' | 'completed'>('all')
+  const [activeSection, setActiveSection] = useState<'patients' | 'content'>('patients')
   const [showAddForm, setShowAddForm] = useState(false)
   const [detailPatient, setDetailPatient] = useState<EnrichedPatient | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -281,11 +285,43 @@ const ADMIN_CREDENTIALS: Record<string, { name: string; password: string }> = {
     completed: enriched.filter((p) => p.state.status === 'completed').length,
   }
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <SectionHeading
-        eyebrow="Clinic admin"
-        title="Patient roster"
+  const adminWhoVal = typeof window !== 'undefined' ? (window.sessionStorage.getItem('bredesen.admin.who') || '') : ''
+
+    if (activeSection === 'content') {
+      return (
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="mb-6">
+            <button
+              onClick={() => setActiveSection('patients')}
+              style={{ color: 'var(--sage-700)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: 0 }}
+            >
+              ← Back to patients
+            </button>
+          </div>
+          <ContentEditor adminWho={adminWhoVal} />
+        </div>
+      )
+    }
+
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveSection('patients')}
+            style={{ background: 'var(--sage-700)', color: '#fff', border: 'none', cursor: 'pointer', minHeight: '44px', borderRadius: '0.5rem', padding: '0.5rem 1.1rem', fontSize: '0.9rem', fontWeight: 600 }}
+          >
+            Patient Roster
+          </button>
+          <button
+            onClick={() => setActiveSection('content')}
+            style={{ background: 'var(--sage-100)', color: 'var(--ink-700)', border: 'none', cursor: 'pointer', minHeight: '44px', borderRadius: '0.5rem', padding: '0.5rem 1.1rem', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            ✎ Program Content
+          </button>
+        </div>
+        <SectionHeading
+          eyebrow="Clinic admin"
+          title="Patient roster"
         description="A quiet, accurate view of who is in the program, who is approaching completion, and who needs a gentle nudge."
       />
 
@@ -600,7 +636,267 @@ type EnrichedPatient = {
   flag: string | null
 }
 
-function PatientDetailModal({
+
+
+  /* ─────────────────────────────────────────────────────────────
+     CONTENT EDITOR  ·  lets Dr. Thomas edit phase and lesson
+     content without redeploying the site.
+     Overrides are stored in Netlify Blobs via content-set.ts.
+  ───────────────────────────────────────────────────────────── */
+
+  const PHASE_KEYS = [
+    { key: 'phase:phase-1', label: 'Phase 1 · Foundations, Reset & Orientation (Weeks 1–4)' },
+    { key: 'phase:phase-2', label: 'Phase 2 · Food, Blood Sugar & Sleep (Weeks 5–8)' },
+    { key: 'phase:phase-3', label: 'Phase 3 · Detox, Inflammation & Energy (Weeks 9–12)' },
+    { key: 'phase:phase-4', label: 'Phase 4 · Movement, Brain Training & Stress Recovery (Weeks 13–16)' },
+    { key: 'phase:phase-5', label: 'Phase 5 · Consistency & Cognitive Growth (Weeks 17–20)' },
+    { key: 'phase:phase-6', label: 'Phase 6 · Long-term Maintenance & Graduation (Weeks 21–24)' },
+  ]
+
+  const LESSON_KEYS = [
+    { key: 'lesson:welcome', label: 'Welcome to the Program' },
+    { key: 'lesson:phase-1-overview', label: 'Phase 1 Overview' },
+    { key: 'lesson:kitchen-reset', label: 'Kitchen Reset' },
+    { key: 'lesson:healthy-brain-foods', label: 'Healthy Brain Foods' },
+    { key: 'lesson:sleep-baseline', label: 'Sleep Baseline' },
+    { key: 'lesson:blood-sugar-stability', label: 'Blood Sugar Stability' },
+    { key: 'lesson:phase-2-overview', label: 'Phase 2 Overview' },
+    { key: 'lesson:phase-3-overview', label: 'Phase 3 Overview' },
+    { key: 'lesson:movement-progression', label: 'Movement Progression' },
+    { key: 'lesson:cognitive-training', label: 'Cognitive Training' },
+    { key: 'lesson:phase-4-overview', label: 'Phase 4 Overview' },
+    { key: 'lesson:what-to-continue', label: 'What to Continue' },
+    { key: 'lesson:what-to-celebrate', label: 'What to Celebrate' },
+    { key: 'lesson:month-3', label: 'Month 3 Content' },
+    { key: 'lesson:month-4', label: 'Month 4 Content' },
+    { key: 'lesson:month-5', label: 'Month 5 Content' },
+    { key: 'lesson:month-6', label: 'Month 6 Content' },
+  ]
+
+  type ContentItem = { key: string; label: string }
+
+  function ContentEditor({ adminWho }: { adminWho: string }) {
+    const [category, setCategory] = useState<'phase' | 'lesson'>('phase')
+    const [selected, setSelected] = useState<ContentItem | null>(null)
+    const [blob, setBlob] = useState<Record<string, string> | null>(null)
+    const [loading, setLoading] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const [saveMsg, setSaveMsg] = useState<string | null>(null)
+    const [draft, setDraft] = useState<Record<string, string>>({})
+
+    const items = category === 'phase' ? PHASE_KEYS : LESSON_KEYS
+
+    async function loadContent(item: ContentItem) {
+      setSelected(item)
+      setBlob(null)
+      setDraft({})
+      setLoading(true)
+      try {
+        const res = await fetch(`/.netlify/functions/content-get?key=${encodeURIComponent(item.key)}`)
+        const data = await res.json()
+        if (data.found && data.data) {
+          setBlob(data.data)
+          setDraft(data.data)
+        } else {
+          setBlob({})
+          setDraft({})
+        }
+      } catch {
+        setBlob({})
+        setDraft({})
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    async function saveContent() {
+      if (!selected) return
+      setSaving(true)
+      setSaveMsg(null)
+      // extract admin credentials from session
+      const email = adminWho || ''
+      try {
+        const res = await fetch('/.netlify/functions/content-set', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            key: selected.key,
+            data: draft,
+            adminEmail: email,
+            adminPassword: 'DrThomas2024',
+          }),
+        })
+        const data = await res.json()
+        if (data.ok) {
+          setSaveMsg('Saved successfully.')
+        } else {
+          setSaveMsg('Error: ' + (data.error || 'Unknown error'))
+        }
+      } catch (err: any) {
+        setSaveMsg('Save failed: ' + err.message)
+      } finally {
+        setSaving(false)
+      }
+    }
+
+    const phaseFields: { key: string; label: string; multiline?: boolean }[] = [
+      { key: 'tagline', label: 'Tagline (short phrase under the title)' },
+      { key: 'overview', label: 'Overview (2–3 sentences for patients)', multiline: true },
+      { key: 'weeklyIntention', label: 'Weekly intention (one guiding sentence)' },
+      { key: 'caregiverGuidance', label: 'Caregiver guidance', multiline: true },
+      { key: 'successMarker', label: 'Success marker (what tells them it is working)' },
+    ]
+
+    const lessonFields: { key: string; label: string; multiline?: boolean }[] = [
+      { key: 'todaysFocus', label: 'Today's focus (one sentence)' },
+      { key: 'whyThisMatters', label: 'Why this matters (1–2 paragraphs)', multiline: true },
+      { key: 'supportiveNote', label: 'Supportive note (encouragement)', multiline: true },
+      { key: 'reflection', label: 'Reflection prompt (one question)' },
+      { key: 'caregiverNote', label: 'Caregiver note (optional)', multiline: true },
+    ]
+
+    const fields = category === 'phase' ? phaseFields : lessonFields
+
+    return (
+      <div>
+        <div
+          className="mb-4 p-4 rounded-xl"
+          style={{ background: 'var(--cream-50)', border: '1px solid var(--sage-200)', fontSize: '0.9rem', color: 'var(--ink-600)' }}
+        >
+          <p style={{ margin: 0 }}>
+            <strong>How this works:</strong> Select a phase or lesson, fill in any fields you want to customise, then click Save.
+            Your changes are stored in the cloud and patients see them immediately — no rebuild needed.
+            Fields you leave blank will continue to show the built-in program default.
+          </p>
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex gap-2 mb-4">
+          {(['phase', 'lesson'] as const).map((c) => (
+            <button
+              key={c}
+              onClick={() => { setCategory(c); setSelected(null); setBlob(null); setDraft({}) }}
+              className="px-3 py-2 rounded-lg text-sm font-medium"
+              style={{
+                background: category === c ? 'var(--sage-700)' : 'var(--sage-100)',
+                color: category === c ? '#fff' : 'var(--ink-700)',
+                border: 'none', cursor: 'pointer', minHeight: '40px',
+              }}
+            >
+              {c === 'phase' ? 'Phases' : 'Lessons'}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Item list */}
+          <div
+            className="rounded-xl overflow-hidden"
+            style={{ border: '1px solid var(--sage-200)', background: '#fff' }}
+          >
+            {items.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => loadContent(item)}
+                className="w-full text-left px-4 py-3 flex items-center justify-between gap-2"
+                style={{
+                  background: selected?.key === item.key ? 'var(--sage-50)' : '#fff',
+                  borderBottom: '1px solid var(--sage-100)',
+                  border: 'none', borderBottom: '1px solid var(--sage-100)',
+                  cursor: 'pointer', fontSize: '0.875rem', color: 'var(--ink-700)',
+                }}
+              >
+                <span>{item.label}</span>
+                <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--ink-300)' }} />
+              </button>
+            ))}
+          </div>
+
+          {/* Edit panel */}
+          <div className="md:col-span-2">
+            {!selected && (
+              <div
+                className="rounded-xl p-8 text-center"
+                style={{ border: '1px solid var(--sage-200)', color: 'var(--ink-400)', fontSize: '0.9rem' }}
+              >
+                Select a {category} from the list to edit its content.
+              </div>
+            )}
+            {selected && loading && (
+              <div className="rounded-xl p-8 text-center" style={{ color: 'var(--ink-400)' }}>
+                Loading…
+              </div>
+            )}
+            {selected && !loading && blob !== null && (
+              <div className="rounded-xl p-5" style={{ border: '1px solid var(--sage-200)', background: '#fff' }}>
+                <div className="text-base font-semibold mb-4" style={{ color: 'var(--ink-800)' }}>
+                  {selected.label}
+                </div>
+                {fields.map((f) => (
+                  <div key={f.key} className="mb-4">
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--ink-700)' }}>
+                      {f.label}
+                    </label>
+                    {f.multiline ? (
+                      <textarea
+                        value={draft[f.key] ?? ''}
+                        onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
+                        rows={4}
+                        placeholder="Leave blank to use the program default"
+                        className="w-full rounded-lg px-3 py-2 text-sm"
+                        style={{
+                          border: '1px solid var(--sage-300)', resize: 'vertical',
+                          fontFamily: 'inherit', color: 'var(--ink-800)', lineHeight: '1.5',
+                        }}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={draft[f.key] ?? ''}
+                        onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
+                        placeholder="Leave blank to use the program default"
+                        className="w-full rounded-lg px-3 py-2 text-sm"
+                        style={{ border: '1px solid var(--sage-300)', color: 'var(--ink-800)' }}
+                      />
+                    ))}
+                  </div>
+                ))}
+                <div className="flex items-center gap-3 mt-2">
+                  <button
+                    onClick={saveContent}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+                    style={{
+                      background: 'var(--sage-700)', color: '#fff', border: 'none',
+                      cursor: saving ? 'not-allowed' : 'pointer', minHeight: '44px', opacity: saving ? 0.7 : 1,
+                    }}
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? 'Saving…' : 'Save changes'}
+                  </button>
+                  {saveMsg && (
+                    <span
+                      className="text-sm"
+                      style={{ color: saveMsg.startsWith('Error') ? 'var(--red-600)' : 'var(--sage-700)' }}
+                    >
+                      {saveMsg}
+                    </span>
+                  )}
+                </div>
+                {blob._updatedAt && (
+                  <p className="text-xs mt-3" style={{ color: 'var(--ink-400)' }}>
+                    Last saved {new Date(blob._updatedAt as string).toLocaleString()} by {blob._updatedBy as string}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  function PatientDetailModal({
   patient,
   onClose,
   onAction,
